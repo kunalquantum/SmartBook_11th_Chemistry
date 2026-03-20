@@ -3,10 +3,10 @@ import MolarMass from './ch01_basics/MolarMass'
 import MoleConcept from './ch01_basics/MoleConcept'
 import Stoichiometry from './ch01_basics/Stoichiometry'
 import EmpiricalFormula from './ch01_basics/EmpiricalFormula'
-import AnalyticalBranches from './ch02_analytical_intro/AnalyticalBranches'
-import ErrorAnalysis from './ch02_analytical_intro/ErrorAnalysis'
-import SigFigs from './ch02_analytical_intro/SigFigs'
-import ConcentrationUnits from './ch02_analytical_intro/ConcentrationUnits'
+import Filtration from './ch03_techniques/Filtration'
+import Distillation from './ch03_techniques/Distillation'
+import Chromatography from './ch03_techniques/Chromatography'
+import SolventExtract from './ch03_techniques/SolventExtract'
 
 export const SIMULATORS = {
     ch01_t0: LawsCombination,
@@ -14,8 +14,8 @@ export const SIMULATORS = {
     ch01_t2: MoleConcept,
     ch01_t3: Stoichiometry,
     ch01_t4: EmpiricalFormula,
-    ch02_t0: AnalyticalBranches,
-    ch02_t1: ErrorAnalysis,
-    ch02_t2: SigFigs,
-    ch02_t3: ConcentrationUnits,
+    ch03_t0: Filtration,
+    ch03_t1: Distillation,
+    ch03_t2: Chromatography,
+    ch03_t3: SolventExtract,
 }
