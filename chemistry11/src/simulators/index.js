@@ -40,7 +40,15 @@ import Adsorption from './ch11_colloids/Adsorption'
 import Catalysis from './ch11_colloids/Catalysis'
 import Colloids from './ch11_colloids/Colloids'
 import Coagulation from './ch11_colloids/Coagulation'
-
+import EquilibriumConcept from './ch12_equilibrium/EquilibriumConcept'
+import LeChatelier from './ch12_equilibrium/LeChatelier'
+import IonicEquilibrium from './ch12_equilibrium/IonicEquilibrium'
+import Ksp from './ch12_equilibrium/Ksp'
+import SaltHydrolysis from './ch12_equilibrium/SaltHydrolysis'
+import Radioactivity from './ch13_nuclear/Radioactivity'
+import DecayKinetics from './ch13_nuclear/DecayKinetics'
+import NuclearReactions from './ch13_nuclear/NuclearReactions'
+import Applications from './ch13_nuclear/Applications'
 export const SIMULATORS = {
     ch01_t0: LawsCombination, ch01_t1: MolarMass,
     ch01_t2: MoleConcept, ch01_t3: Stoichiometry,
@@ -67,4 +75,13 @@ export const SIMULATORS = {
     ch11_t1: Catalysis,
     ch11_t2: Colloids,
     ch11_t3: Coagulation,
+    ch12_t0: EquilibriumConcept,
+    ch12_t1: LeChatelier,
+    ch12_t2: IonicEquilibrium,
+    ch12_t3: Ksp,
+    ch12_t4: SaltHydrolysis,
+    ch13_t0: Radioactivity,
+    ch13_t1: DecayKinetics,
+    ch13_t2: NuclearReactions,
+    ch13_t3: Applications,
 }
