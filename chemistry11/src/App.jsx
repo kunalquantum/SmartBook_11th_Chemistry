@@ -6,6 +6,7 @@ import TopBar from './components/layout/TopBar'
 import ChapterPage from './components/book/ChapterPage'
 import ValueCard from './components/ui/ValueCard'
 import BranchBadge from './components/ui/BranchBadge'
+import AtomicExplorerPage from './components/Atom3D/AtomicExplorerPage'
 
 const BRANCH_COLOR = {
     Physical: '#EF9F27', Inorganic: '#1D9E75',
@@ -57,7 +58,7 @@ export default function App() {
                     </div>
 
                     {/* Global stats (home screen) */}
-                    {!activeChapter && (
+                    {!activeChapter && activeId !== 'atom3d' && (
                         <>
                             <div style={{
                                 display: 'flex', gap: 10, padding: '14px 26px',
@@ -113,6 +114,10 @@ export default function App() {
                             done={done}
                             onToggle={toggle}
                         />
+                    )}
+
+                    {activeId === 'atom3d' && (
+                        <AtomicExplorerPage />
                     )}
                 </main>
             </div>

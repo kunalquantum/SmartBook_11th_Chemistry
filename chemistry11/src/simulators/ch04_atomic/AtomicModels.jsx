@@ -93,21 +93,66 @@ function useParticles(active) {
 export default function AtomicModels() {
     const [model, setModel] = useState('thomson')
     const [animating, setAnimating] = useState(false)
-    const [bohrN, setBohrN] = useState(3)   // electron shell in Bohr
     const [tick, setTick] = useState(0)
+    
+    // State machine for Bohr sequence
+    const seqRef = useRef({
+        phase: 0,         // 0: ground, 1: photon in, 2: excite, 3: orbit, 4: relax, 5: photon out
+        currentN: 1,      // always start at ground state n=1
+        targetN: 1,
+        timeInPhase: 0,
+        photonParams: { x: 0, y: 0, destX: 0, destY: 0 },
+        angle: 0          // track absolute angle so we don't jump when switching orbits
+    })
+
     const rafBohr = useRef(null)
-    const tBohr = useRef(0)
     const lastBohr = useRef(null)
 
     const particles = useParticles(model === 'rutherford' && animating)
 
-    // Bohr orbital animation
+    // Bohr orbital sequence loop
     useEffect(() => {
         if (model !== 'bohr') return
         const step = ts => {
             if (!lastBohr.current) lastBohr.current = ts
-            tBohr.current += (ts - lastBohr.current) / 1000
+            const dt = (ts - lastBohr.current) / 1000
             lastBohr.current = ts
+            
+            const seq = seqRef.current
+            const BOHR_CX = 200, BOHR_CY = 120
+            const BOHR_R = (n) => 20 + n * 22
+
+            // Calculate electron position/angle regardless of phase
+            let activeN = seq.currentN;
+            if (seq.phase === 3 || seq.phase === 4 || seq.phase === 5) activeN = seq.targetN;
+            
+            const speed = 1.5 / activeN;
+            seq.angle += dt * speed;
+
+            if (seq.phase > 0) {
+                seq.timeInPhase += dt;
+                
+                // State Machine Transitions
+                if (seq.phase === 1 && seq.timeInPhase > 1.5) {
+                    seq.phase = 2; seq.timeInPhase = 0; // photon hit, start climbing
+                } else if (seq.phase === 2 && seq.timeInPhase > 1.0) {
+                    seq.phase = 3; seq.timeInPhase = 0; // arrived at targetN
+                    seq.currentN = seq.targetN;
+                } else if (seq.phase === 3 && seq.timeInPhase > 2.0) {
+                    seq.phase = 4; seq.timeInPhase = 0; // lose stability, fall down
+                } else if (seq.phase === 4 && seq.timeInPhase > 1.0) {
+                    seq.phase = 5; seq.timeInPhase = 0; // reached ground, emit photon
+                    
+                    // Pre-calculate origin of the emitted photon (where electron is right now)
+                    seq.photonParams.x = BOHR_CX + BOHR_R(1) * Math.cos(seq.angle);
+                    seq.photonParams.y = BOHR_CY + BOHR_R(1) * Math.sin(seq.angle);
+                    
+                } else if (seq.phase === 5 && seq.timeInPhase > 1.5) {
+                    seq.phase = 0; seq.timeInPhase = 0; // photon left, restore peace
+                    seq.currentN = 1;
+                }
+            }
+            
             setTick(p => p + 1)
             rafBohr.current = requestAnimationFrame(step)
         }
@@ -115,8 +160,17 @@ export default function AtomicModels() {
         return () => { cancelAnimationFrame(rafBohr.current); lastBohr.current = null }
     }, [model])
 
+    const triggerBohrJump = (n) => {
+        if (seqRef.current.phase !== 0) return; // Only jump from ground
+        if (n === 1) return; // Already at ground
+        
+        seqRef.current.targetN = n;
+        seqRef.current.phase = 1;
+        seqRef.current.timeInPhase = 0;
+    }
+
     const cur = MODELS.find(m => m.id === model)
-    const t = tBohr.current
+    const seq = seqRef.current;
 
     // Bohr energy levels
     const bohrLevels = [1, 2, 3, 4, 5]
@@ -125,10 +179,34 @@ export default function AtomicModels() {
 
     // Thomson electron positions
     const thomsonElectrons = Array.from({ length: 8 }, (_, i) => {
+        const t = (tick * 16) / 1000; // rough time approximation for Thomson
         const angle = (i / 8) * 2 * Math.PI + t * 0.3
         const r = 40 + (i % 3) * 18
         return { x: 130 + r * Math.cos(angle), y: 120 + r * Math.sin(angle) }
     })
+
+    // Calculate dynamic electron radius for Bohr
+    let dynamicR = BOHR_R(1);
+    if (seq.phase === 0 || seq.phase === 1) {
+        dynamicR = BOHR_R(1);
+    } else if (seq.phase === 2) {
+        const p = Math.min(1, seq.timeInPhase / 1.0);
+        const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // in-out quad
+        dynamicR = BOHR_R(1) + (BOHR_R(seq.targetN) - BOHR_R(1)) * ease;
+    } else if (seq.phase === 3 || seq.phase === 5) {
+        dynamicR = BOHR_R(seq.targetN);
+    } else if (seq.phase === 4) {
+        const p = Math.min(1, seq.timeInPhase / 1.0);
+        const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+        dynamicR = BOHR_R(seq.targetN) + (BOHR_R(1) - BOHR_R(seq.targetN)) * ease;
+    }
+
+    const electronX = BOHR_CX + dynamicR * Math.cos(seq.angle);
+    const electronY = BOHR_CY + dynamicR * Math.sin(seq.angle);
+
+    // Delta E calculations
+    const calcE = (n) => (-13.6 / (n * n));
+    const dE = calcE(seq.targetN) - calcE(1);
 
     return (
         <div>
@@ -279,59 +357,91 @@ export default function AtomicModels() {
                                     <g key={n}>
                                         <circle cx={BOHR_CX} cy={BOHR_CY} r={BOHR_R(n)}
                                             fill="none"
-                                            stroke={n === bohrN ? `${cur.color}60` : 'rgba(255,255,255,0.07)'}
-                                            strokeWidth={n === bohrN ? 1.5 : 0.8} />
+                                            stroke={(n === seq.currentN || n === seq.targetN) ? `${cur.color}60` : 'rgba(255,255,255,0.07)'}
+                                            strokeWidth={(n === seq.currentN || n === seq.targetN) ? 1.5 : 0.8} />
                                         {/* n label */}
                                         <text
-                                            x={BOHR_CX + BOHR_R(n) + 4}
-                                            y={BOHR_CY + 4}
+                                            x={BOHR_CX}
+                                            y={BOHR_CY - BOHR_R(n) - 4}
+                                            textAnchor="middle"
                                             style={{ fontSize: 8, fill: `rgba(160,176,200,0.3)`, fontFamily: 'var(--mono)' }}>
                                             n={n}
                                         </text>
                                     </g>
                                 ))}
 
-                                {/* Electron on selected orbit */}
-                                {bohrLevels.map(n => {
-                                    const speed = 1.5 / n
-                                    const angle = t * speed
-                                    const ex = BOHR_CX + BOHR_R(n) * Math.cos(angle)
-                                    const ey = BOHR_CY + BOHR_R(n) * Math.sin(angle)
-                                    if (n > 3) return null
-                                    return (
-                                        <g key={n}>
-                                            <circle cx={ex} cy={ey} r={n === bohrN ? 7 : 5}
-                                                fill={n === bohrN ? 'rgba(55,138,221,0.8)' : 'rgba(55,138,221,0.25)'}
-                                                stroke="#378ADD" strokeWidth={n === bohrN ? 1.5 : 0.8} />
-                                            {n === bohrN && (
-                                                <text x={ex} y={ey + 3} textAnchor="middle"
-                                                    style={{ fontSize: 6, fill: '#fff', fontFamily: 'var(--mono)' }}>e⁻</text>
-                                            )}
-                                        </g>
-                                    )
-                                })}
+                                {/* Emitted / Absorbed Photon rendering */}
+                                {seq.phase === 1 && (
+                                    <g>
+                                        <path d={`M -20 ${BOHR_CY} Q 40 ${BOHR_CY - 20} 100 ${BOHR_CY} T 200 ${BOHR_CY}`} 
+                                              fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="300" strokeDashoffset={300 - (seq.timeInPhase / 1.5) * 300} />
+                                        <text x={80 + (seq.timeInPhase / 1.5) * 100} y={BOHR_CY - 15} fill="var(--gold)" style={{ fontSize: 9, fontFamily: 'var(--mono)' }}>photon in</text>
+                                    </g>
+                                )}
+                                {seq.phase === 5 && (
+                                    <g>
+                                        <path d={`M ${seq.photonParams.x} ${seq.photonParams.y} Q ${seq.photonParams.x + 50} ${seq.photonParams.y + 20} ${seq.photonParams.x + 100} ${seq.photonParams.y} T 450 ${seq.photonParams.y}`} 
+                                              fill="none" stroke="var(--teal)" strokeWidth={1} strokeDasharray="300" strokeDashoffset={-(seq.timeInPhase / 1.5) * 300} />
+                                        <text x={seq.photonParams.x + (seq.timeInPhase / 1.5) * 100} y={seq.photonParams.y - 15} fill="var(--teal)" style={{ fontSize: 9, fontFamily: 'var(--mono)' }}>photon out</text>
+                                    </g>
+                                )}
 
-                                {/* Energy emission arrow when n changes */}
-                                <text x={BOHR_CX} y={225} textAnchor="middle"
-                                    style={{ fontSize: 9, fill: 'rgba(160,176,200,0.4)', fontFamily: 'var(--mono)' }}>
-                                    Eₙ = −13.6/n² eV  ·  selected n={bohrN}:  {(-13.6 / bohrN ** 2).toFixed(3)} eV
+                                {/* Curved Excitation Arrow */}
+                                {seq.phase === 2 && (
+                                    <path d={`M ${electronX} ${BOHR_CY - BOHR_R(1)} Q ${electronX + 40} ${BOHR_CY - (BOHR_R(1)+BOHR_R(seq.targetN))/2} ${electronX} ${BOHR_CY - BOHR_R(seq.targetN)}`} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={1} markerEnd="url(#arrow)" />
+                                )}
+                                {/* Curved Relaxation Arrow */}
+                                {seq.phase === 4 && (
+                                    <path d={`M ${electronX} ${BOHR_CY - BOHR_R(seq.targetN)} Q ${electronX - 40} ${BOHR_CY - (BOHR_R(1)+BOHR_R(seq.targetN))/2} ${electronX} ${BOHR_CY - BOHR_R(1)}`} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={1} markerEnd="url(#arrow)" />
+                                )}
+
+                                {/* Single electron (dynamic R and Pos) */}
+                                <g>
+                                    <circle cx={electronX} cy={electronY} r={6}
+                                        fill={seq.phase > 0 ? 'var(--gold)' : 'rgba(55,138,221,0.8)'}
+                                        stroke="#fff" strokeWidth={1} />
+                                    <text x={electronX} y={electronY - 8} textAnchor="middle"
+                                        style={{ fontSize: 8, fill: '#fff', fontFamily: 'var(--mono)' }}>e⁻</text>
+                                </g>
+
+                                {/* Energy labels */}
+                                <text x={BOHR_CX} y={225} textAnchor="middle" style={{ fontSize: 9, fill: 'rgba(160,176,200,0.4)', fontFamily: 'var(--mono)' }}>
+                                    Ground E₁ = -13.6 eV
                                 </text>
+                                
+                                {seq.phase >= 2 && seq.phase <= 4 && (
+                                    <text x={BOHR_CX} y={210} textAnchor="middle" style={{ fontSize: 10, fill: seq.phase === 4 ? 'var(--teal)' : 'var(--gold)', fontFamily: 'var(--mono)', fontWeight: 700 }}>
+                                        {seq.phase === 2 || seq.phase === 3 ? `+${dE.toFixed(2)} eV Absorbed` : `-${dE.toFixed(2)} eV Emitted`}
+                                    </text>
+                                )}
+                                
+                                <defs>
+                                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255,255,255,0.6)" />
+                                    </marker>
+                                </defs>
                             </g>
                         )}
                     </svg>
 
-                    {/* Bohr level picker */}
+                    {/* Bohr sequence picker */}
                     {model === 'bohr' && (
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 8 }}>
-                            {bohrLevels.map(n => (
-                                <button key={n} onClick={() => setBohrN(n)} style={{
-                                    width: 32, height: 32, borderRadius: 6, fontSize: 11,
-                                    fontFamily: 'var(--mono)', cursor: 'pointer',
-                                    background: bohrN === n ? cur.color : 'var(--bg3)',
-                                    color: bohrN === n ? '#000' : 'var(--text2)',
-                                    border: `1px solid ${bohrN === n ? cur.color : 'var(--border)'}`,
-                                }}>n={n}</button>
-                            ))}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 4 }}>
+                            <div style={{ fontSize: 10, fill: 'var(--text3)', fontFamily: 'var(--mono)', marginBottom: 8 }}>
+                                SELECT TARGET ORBITAL FOR EXCITATION SEQUENCE
+                            </div>
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                                {[2, 3, 4, 5].map(n => (
+                                    <button key={n} onClick={() => triggerBohrJump(n)} disabled={seq.phase !== 0} style={{
+                                        width: 32, height: 32, borderRadius: 6, fontSize: 11,
+                                        fontFamily: 'var(--mono)', cursor: seq.phase === 0 ? 'pointer' : 'not-allowed',
+                                        background: seq.phase > 0 && n === seq.targetN ? cur.color : 'var(--bg3)',
+                                        color: seq.phase > 0 && n === seq.targetN ? '#000' : 'var(--text2)',
+                                        border: `1px solid ${seq.phase > 0 && n === seq.targetN ? cur.color : 'var(--border)'}`,
+                                        opacity: seq.phase !== 0 && n !== seq.targetN ? 0.3 : 1
+                                    }}>n={n}</button>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -403,7 +513,7 @@ export default function AtomicModels() {
                 <ValueCard label="Year" value={cur.year} color="var(--text2)" />
                 <ValueCard label="Model" value={cur.tagline} color={cur.color} />
                 {model === 'bohr' && (
-                    <ValueCard label={`E at n=${bohrN}`} value={`${(-13.6 / bohrN ** 2).toFixed(3)} eV`} color="var(--teal)" />
+                    <ValueCard label={`ΔE (jump to n=${seq.targetN})`} value={`${dE.toFixed(3)} eV`} color="var(--teal)" />
                 )}
             </div>
         </div>

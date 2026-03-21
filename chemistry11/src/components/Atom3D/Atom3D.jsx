@@ -4,7 +4,7 @@ import { generateElectrons } from './ElectronShells'
 import { getShells } from './AtomData'
 import ChemSlider from '../ui/ChemSlider'
 
-export default function Atom3D({ z, mass, symbol, name }) {
+export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, offsetY = 0, compact = false }) {
     const pCount = z;
     const nCount = Math.round(mass) - z;
     
@@ -103,7 +103,7 @@ export default function Atom3D({ z, mass, symbol, name }) {
         let y2 = sy * Math.cos(radX) - z1 * Math.sin(radX)
         let z2 = sy * Math.sin(radX) + z1 * Math.cos(radX)
         
-        return { ...pt, px: 200 + x1, py: 150 + y2, pz: z2 }
+        return { ...pt, px: 200 + x1 + offsetX, py: 150 + y2 + offsetY, pz: z2 }
     }
 
     // Process elements for rendering
@@ -137,12 +137,21 @@ export default function Atom3D({ z, mass, symbol, name }) {
     });
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 0 : 16, height: compact ? '100%' : 'auto' }}>
             {/* 3D Canvas Area */}
-            <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', borderRadius: 12, overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 16, right: 16, fontSize: 10, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.4)', pointerEvents: 'none' }}>
-                    👆 CLICK & DRAG TO SPIN
-                </div>
+            <div style={{ 
+                position: 'relative', 
+                width: '100%', 
+                height: compact ? '100%' : 'auto',
+                aspectRatio: compact ? 'none' : '4/3', 
+                borderRadius: 12, 
+                overflow: compact ? 'visible' : 'hidden' 
+            }}>
+                {!compact && (
+                    <div style={{ position: 'absolute', top: 16, right: 16, fontSize: 10, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.4)', pointerEvents: 'none' }}>
+                        👆 CLICK & DRAG TO SPIN
+                    </div>
+                )}
 
                 <svg 
                     viewBox="0 0 400 300" 
@@ -162,12 +171,16 @@ export default function Atom3D({ z, mass, symbol, name }) {
                             <feGaussianBlur stdDeviation="5" />
                         </filter>
                     </defs>
-                    <text x="200" y="30" textAnchor="middle" fill="#fff" style={{ fontSize: 16, fontFamily: 'var(--mono)', fontWeight: 700 }}>
-                        {name} ({symbol})
-                    </text>
-                    <text x="200" y="50" textAnchor="middle" fill="var(--text2)" style={{ fontSize: 11, fontFamily: 'var(--mono)' }}>
-                        {pCount} Protons • {nCount} Neutrons • {pCount} Electrons
-                    </text>
+                    {!compact && (
+                        <>
+                            <text x="200" y="30" textAnchor="middle" fill="#fff" style={{ fontSize: 16, fontFamily: 'var(--mono)', fontWeight: 700 }}>
+                                {name} ({symbol})
+                            </text>
+                            <text x="200" y="50" textAnchor="middle" fill="var(--text2)" style={{ fontSize: 11, fontFamily: 'var(--mono)' }}>
+                                {pCount} Protons • {nCount} Neutrons • {pCount} Electrons
+                            </text>
+                        </>
+                    )}
                     
                     {renderItems.map((item, i) => {
                         const isFocused = focusShell === 'All' || item.sIdx === parseInt(focusShell);
@@ -211,23 +224,25 @@ export default function Atom3D({ z, mass, symbol, name }) {
             </div>
 
             {/* Interactive Control Panel Below SVG */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px', background: 'var(--bg3)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                {/* Advanced Toggle Layer */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <button onClick={() => setViewMode(v => v === 'orbital' ? 'cloud' : 'orbital')} style={btnStyle(viewMode === 'cloud')}>☁️ Cloud View</button>
-                    <button onClick={() => setShowNucleus(v => !v)} style={btnStyle(showNucleus)}>🔴 Nucleus</button>
-                    <button onClick={() => setEnergyLevels(v => !v)} style={btnStyle(energyLevels)}>📈 Energy Levels</button>
-                    
-                    <select value={focusShell} onChange={e => setFocusShell(e.target.value)} style={{ padding: '6px 12px', borderRadius: 6, background: 'var(--bg2)', color: 'var(--text)', border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
-                        <option value="All">🔭 Focus: Entire Atom</option>
-                        {shells.map((_, i) => <option key={i} value={i}>🔭 Focus: {['K', 'L', 'M', 'N'][i]} Shell</option>)}
-                    </select>
-                </div>
+            {!compact && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px', background: 'var(--bg3)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                    {/* Advanced Toggle Layer */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <button onClick={() => setViewMode(v => v === 'orbital' ? 'cloud' : 'orbital')} style={btnStyle(viewMode === 'cloud')}>☁️ Cloud View</button>
+                        <button onClick={() => setShowNucleus(v => !v)} style={btnStyle(showNucleus)}>🔴 Nucleus</button>
+                        <button onClick={() => setEnergyLevels(v => !v)} style={btnStyle(energyLevels)}>📈 Energy Levels</button>
+                        
+                        <select value={focusShell} onChange={e => setFocusShell(e.target.value)} style={{ padding: '6px 12px', borderRadius: 6, background: 'var(--bg2)', color: 'var(--text)', border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
+                            <option value="All">🔭 Focus: Entire Atom</option>
+                            {shells.map((_, i) => <option key={i} value={i}>🔭 Focus: {['K', 'L', 'M', 'N'][i]} Shell</option>)}
+                        </select>
+                    </div>
 
-                <ChemSlider label="Rotate 3D" unit="°" value={Math.round(((rot.y % 360) + 360) % 360)} min={0} max={360} step={1} onChange={(v) => setRot(p => ({...p, y: v}))} color="var(--blue)" />
-                <ChemSlider label="Orbit Speed" unit="x" value={eSpeed} min={0} max={4} step={0.1} onChange={setESpeed} color="var(--teal)" />
-                <ChemSlider label="Deconstruct" unit="%" value={Math.round(explode * 100)} min={0} max={100} step={1} onChange={(v) => setExplode(v / 100)} color="var(--coral)" />
-            </div>
+                    <ChemSlider label="Rotate 3D" unit="°" value={Math.round(((rot.y % 360) + 360) % 360)} min={0} max={360} step={1} onChange={(v) => setRot(p => ({...p, y: v}))} color="var(--blue)" />
+                    <ChemSlider label="Orbit Speed" unit="x" value={eSpeed} min={0} max={4} step={0.1} onChange={setESpeed} color="var(--teal)" />
+                    <ChemSlider label="Deconstruct" unit="%" value={Math.round(explode * 100)} min={0} max={100} step={1} onChange={(v) => setExplode(v / 100)} color="var(--coral)" />
+                </div>
+            )}
         </div>
     )
 }

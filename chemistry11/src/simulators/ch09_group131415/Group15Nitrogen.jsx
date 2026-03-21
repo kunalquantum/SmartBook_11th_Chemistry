@@ -24,7 +24,7 @@ export default function Group15Nitrogen() {
     const [selEl, setSelEl] = useState('N')
 
     // P Allotrope Interactive State
-    const [pTemp, setPTemp] = useState(298)
+    const [polyStep, setPolyStep] = useState(0) // 0: White P, 1: Homolytic Cleavage, 2: Radicals, 3: Recombination, 4: Red P
 
     // Haber Process Yield Math
     // High pressure = high yield. High temp = low yield (but faster rate in reality).
@@ -119,64 +119,128 @@ export default function Group15Nitrogen() {
     )
 
     const renderPhosphorusPolymerizer = () => {
-        const f = (pTemp - 298) / 275 // 0 to 1
         return (
-            <svg viewBox="0 0 400 200" style={{ marginTop: 14 }}>
-                <text x="200" y="30" textAnchor="middle" fill="var(--coral)" style={{ fontSize: 13, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
-                    {pTemp < 573 ? 'P₄ White Phosphorus (Discrete, Strained)' : 'Pₙ Red Phosphorus (Polymeric Chain)'}
-                </text>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <svg viewBox="0 0 400 200" style={{ marginTop: 14 }}>
+                    <text x="200" y="30" textAnchor="middle" fill="var(--coral)" style={{ fontSize: 13, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
+                        {polyStep === 0 ? 'P₄ White Phosphorus (Discrete, Strained)' : polyStep === 4 ? 'Pₙ Red Phosphorus (Polymeric Chain)' : 'Reaction Intermediate Phase'}
+                    </text>
+                    
+                    {[0, 1, 2].map(i => {
+                        // Draw 3 tetrahedrons
+                        const cx = 100 + i * 100
+                        const cy = 120
+                        const p1 = { x: cx, y: cy-30 }
+                        const p2 = { x: cx-25, y: cy+15 }
+                        const p3 = { x: cx+25, y: cy+15 }
+                        const p4 = { x: cx, y: cy+5 }
+
+                        const bondCenter = { x: (p2.x + p3.x)/2, y: (p2.y + p3.y)/2 }
+
+                        return (
+                            <g key={`p4_${i}`}>
+                                {/* Static Bonds (Intact 3 bonds of the base) */}
+                                <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="#EF9F27" strokeWidth="4" />
+                                <line x1={p1.x} y1={p1.y} x2={p3.x} y2={p3.y} stroke="#EF9F27" strokeWidth="4" />
+                                <line x1={p1.x} y1={p1.y} x2={p4.x} y2={p4.y} stroke="#EF9F27" strokeWidth="4" />
+                                <line x1={p2.x} y1={p2.y} x2={p4.x} y2={p4.y} stroke="#EF9F27" strokeWidth="4" />
+                                <line x1={p3.x} y1={p3.y} x2={p4.x} y2={p4.y} stroke="#EF9F27" strokeWidth="4" />
+
+                                {/* Breaking Bond (p2 to p3) */}
+                                {polyStep <= 1 && (
+                                    <line x1={p2.x} y1={p2.y} x2={p3.x} y2={p3.y} stroke="#EF9F27" strokeWidth="4" strokeDasharray={polyStep === 1 ? "4 4" : ""} />
+                                )}
+
+                                {/* Formal Fishhook Arrows (Homolytic Cleavage) */}
+                                {polyStep === 1 && (
+                                    <g>
+                                        {/* Left arrow to p2 */}
+                                        <path d={`M ${bondCenter.x - 2} ${bondCenter.y - 4} Q ${p2.x + 10} ${p2.y - 15} ${p2.x} ${p2.y - 8}`} fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={1.5} markerEnd="url(#fishhook)" strokeDasharray="3 3" />
+                                        {/* Right arrow to p3 */}
+                                        <path d={`M ${bondCenter.x + 2} ${bondCenter.y - 4} Q ${p3.x - 10} ${p3.y - 15} ${p3.x} ${p3.y - 8}`} fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={1.5} markerEnd="url(#fishhook)" strokeDasharray="3 3" />
+                                    </g>
+                                )}
+
+                                {/* Radical Electron Dots */}
+                                {(polyStep === 2 || polyStep === 3) && (
+                                    <g>
+                                        <circle cx={p2.x - 8} cy={p2.y} r={3} fill="#fff" />
+                                        <circle cx={p3.x + 8} cy={p3.y} r={3} fill="#fff" />
+                                    </g>
+                                )}
+
+                                {/* Recombination Arrows */}
+                                {polyStep === 3 && i < 2 && (
+                                    <path d={`M ${p3.x + 8} ${p3.y} Q ${p3.x + 40} ${p3.y - 20} ${cx + 100 - 25 - 8} ${cy + 15}`} fill="none" stroke="var(--gold)" strokeWidth={2} markerEnd="url(#curlyArrow)" />
+                                )}
+                                
+                                {polyStep === 3 && i === 0 && (
+                                    <path d={`M ${p2.x - 8} ${p2.y} Q ${p2.x - 20} ${p2.y - 15} ${p2.x - 30} ${p2.y - 10}`} fill="none" stroke="var(--gold)" strokeWidth={2} markerEnd="url(#curlyArrow)" />
+                                )}
+
+                                {/* Forming Polymeric Bond to next unit */}
+                                {polyStep === 4 && i < 2 && (
+                                    <line x1={p3.x} y1={p3.y} x2={cx + 100 - 25} y2={cy + 15} stroke="#D85A30" strokeWidth="4" />
+                                )}
+                                {/* Ends of the chain */}
+                                {polyStep === 4 && i === 0 && <line x1={p2.x} y1={p2.y} x2={p2.x - 30} y2={p2.y} stroke="#D85A30" strokeWidth="4" strokeDasharray="6 4" />}
+                                {polyStep === 4 && i === 2 && <line x1={p3.x} y1={p3.y} x2={p3.x + 30} y2={p3.y} stroke="#D85A30" strokeWidth="4" strokeDasharray="6 4" />}
+
+                                {/* P Atoms */}
+                                {(() => {
+                                    const c1 = polyStep < 4 ? "#FAC775" : "#D85A30"
+                                    const P = (x, y, r) => (
+                                        <g>
+                                            <circle cx={x} cy={y} r={r} fill={`${c1}20`} stroke={c1} strokeWidth="2" />
+                                            <text x={x} y={y+3} textAnchor="middle" fill={c1} style={{ fontSize: r*0.6, fontFamily: 'var(--mono)', fontWeight: 700 }}>P</text>
+                                        </g>
+                                    )
+                                    return (
+                                        <g>
+                                            {P(p1.x, p1.y, 12)}
+                                            {P(p2.x, p2.y, 12)}
+                                            {P(p3.x, p3.y, 12)}
+                                            {P(p4.x, p4.y, 14)}
+                                        </g>
+                                    )
+                                })()}
+                            </g>
+                        )
+                    })}
+                    
+                    <defs>
+                        {/* Half-headed fishhook arrow for homolytic cleavage */}
+                        <marker id="fishhook" viewBox="0 0 10 10" refX="8" refY="3" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 3 Q 4 0 8 3 L 8 4 Q 4 1.5 0 4 z" fill="rgba(255,255,255,0.8)" />
+                        </marker>
+                        {/* Standard curly arrow for bond formation */}
+                        <marker id="curlyArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                            <path d="M 0 1 L 8 5 L 0 9 z" fill="var(--gold)" />
+                        </marker>
+                    </defs>
+                </svg>
                 
-                {[0, 1, 2].map(i => {
-                    // Draw 3 tetrahedrons
-                    const cx = 100 + i * 100
-                    const cy = 120
-                    const p1 = { x: cx, y: cy-30 }
-                    const p2 = { x: cx-25, y: cy+15 }
-                    const p3 = { x: cx+25, y: cy+15 }
-                    const p4 = { x: cx, y: cy+5 }
-
-                    return (
-                        <g key={`p4_${i}`}>
-                            {/* Static Bonds */}
-                            <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="#EF9F27" strokeWidth="4" />
-                            <line x1={p1.x} y1={p1.y} x2={p3.x} y2={p3.y} stroke="#EF9F27" strokeWidth="4" />
-                            <line x1={p1.x} y1={p1.y} x2={p4.x} y2={p4.y} stroke="#EF9F27" strokeWidth="4" />
-                            <line x1={p2.x} y1={p2.y} x2={p4.x} y2={p4.y} stroke="#EF9F27" strokeWidth="4" />
-                            <line x1={p3.x} y1={p3.y} x2={p4.x} y2={p4.y} stroke="#EF9F27" strokeWidth="4" />
-
-                            {/* Breaking Bond (strain releases) */}
-                            <line x1={p2.x} y1={p2.y} x2={p3.x} y2={p3.y} stroke="#EF9F27" strokeWidth="4" opacity={1 - f} strokeDasharray={f > 0.5 ? "4 4" : ""} />
-
-                            {/* Forming Polymeric Bond to next unit */}
-                            {i < 2 && (
-                                <line x1={p3.x} y1={p3.y} x2={cx + 100 - 25} y2={cy + 15} stroke="#D85A30" strokeWidth="4" opacity={f} />
-                            )}
-                            {/* Ends of the chain */}
-                            {i === 0 && <line x1={p2.x} y1={p2.y} x2={p2.x - 30} y2={p2.y} stroke="#D85A30" strokeWidth="4" opacity={f} strokeDasharray="6 4" />}
-                            {i === 2 && <line x1={p3.x} y1={p3.y} x2={p3.x + 30} y2={p3.y} stroke="#D85A30" strokeWidth="4" opacity={f} strokeDasharray="6 4" />}
-
-                            {/* P Atoms */}
-                            {(() => {
-                                const c1 = f < 0.8 ? "#FAC775" : "#D85A30"
-                                const P = (x, y, r) => (
-                                    <g>
-                                        <circle cx={x} cy={y} r={r} fill={`${c1}20`} stroke={c1} strokeWidth="2" />
-                                        <text x={x} y={y+3} textAnchor="middle" fill={c1} style={{ fontSize: r*0.6, fontFamily: 'var(--mono)', fontWeight: 700 }}>P</text>
-                                    </g>
-                                )
-                                return (
-                                    <g>
-                                        {P(p1.x, p1.y, 12)}
-                                        {P(p2.x, p2.y, 12)}
-                                        {P(p3.x, p3.y, 12)}
-                                        {P(p4.x, p4.y, 14)}
-                                    </g>
-                                )
-                            })()}
-                        </g>
-                    )
-                })}
-            </svg>
+                {/* Teaching UI Sequence Controls */}
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 8 }}>
+                    {[
+                        { s: 0, l: 'White P₄' },
+                        { s: 1, l: 'Cleavage' },
+                        { s: 2, l: 'Radicals' },
+                        { s: 3, l: 'Combine' },
+                        { s: 4, l: 'Red Polymer' }
+                    ].map(st => (
+                        <button key={st.s} onClick={() => setPolyStep(st.s)} style={{
+                            padding: '6px 10px', borderRadius: 8, fontSize: 11,
+                            fontFamily: 'var(--mono)', cursor: 'pointer', fontWeight: 600,
+                            background: polyStep === st.s ? 'var(--coral)' : 'var(--bg3)',
+                            color: polyStep === st.s ? '#000' : 'var(--text2)',
+                            border: `1px solid ${polyStep === st.s ? 'var(--coral)' : 'var(--border)'}`,
+                        }}>
+                            {st.s + 1}. {st.l}
+                        </button>
+                    ))}
+                </div>
+            </div>
         )
     }
 
@@ -309,7 +373,6 @@ export default function Group15Nitrogen() {
                     </div>
 
                     <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
-                        <ChemSlider label="Heat White Phosphorus" unit="K" value={pTemp} min={298} max={573} step={5} onChange={setPTemp} color="var(--coral)" />
                         {renderPhosphorusPolymerizer()}
                     </div>
 

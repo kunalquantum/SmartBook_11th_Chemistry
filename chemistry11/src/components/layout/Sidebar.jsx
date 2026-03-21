@@ -38,6 +38,22 @@ export default function Sidebar({ chapters, activeId, onSelect, chapterDone, tot
                 </div>
             </div>
 
+            {/* Dedicated Tools */}
+            <div style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                <div onClick={() => onSelect('atom3d')} style={{
+                    padding: '10px 15px', cursor: 'pointer',
+                    background: activeId === 'atom3d' ? 'rgba(55,138,221,0.1)' : 'transparent',
+                    borderLeft: `3px solid ${activeId === 'atom3d' ? '#378ADD' : 'transparent'}`,
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    transition: 'background 0.15s'
+                }}>
+                    <span style={{ fontSize: 16 }}>🔭</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: activeId === 'atom3d' ? '#378ADD' : 'var(--text2)' }}>
+                        3D Atomic Explorer
+                    </span>
+                </div>
+            </div>
+
             {/* Chapter list */}
             <div style={{ overflowY: 'auto', flex: 1, padding: '5px 0' }}>
                 {chapters.map(ch => {

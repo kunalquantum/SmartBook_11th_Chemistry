@@ -111,17 +111,46 @@ export default function IonicBonding() {
                                     return <circle key={i} cx={280 + (step >= 2 ? 45 : 35) * Math.cos(ang)} cy={120 + (step >= 2 ? 45 : 35) * Math.sin(ang)} r={4} fill={`${xCol},0.6)`} />
                                 })}
 
-                                {/* Transfer animation */}
-                                {step === 1 && transferProgress > 0 && transferProgress < 1 && (
-                                    <g>
-                                        <circle cx={165 + transferProgress * 80} cy={120 - Math.sin(transferProgress * Math.PI) * 40} r={6} fill={`${mCol},1)`} />
-                                        {metalIs2Plus && (
-                                            <circle cx={165 + transferProgress * 80} cy={140 + Math.sin(transferProgress * Math.PI) * 40} r={6} fill={`${mCol},1)`} />
-                                        )}
-                                        {/* Path line */}
-                                        <path d={`M 165 ${metalIs2Plus ? 140 : 120} Q 200 ${metalIs2Plus ? 180 : 80} 245 ${metalIs2Plus ? 140 : 120}`} fill="none" stroke={`${mCol},0.5)`} strokeWidth={1} strokeDasharray="3 3" />
-                                    </g>
-                                )}
+                                {/* Transfer animation with Formal Chemistry Curved Arrow */}
+                                {step === 1 && transferProgress > 0 && transferProgress < 1 && (() => {
+                                    // Sequence timings: Arrow draws (0 -> 0.4), Pauli pause (0.4->0.5), Electron moves (0.5 -> 0.9), Pause (0.9->1.0)
+                                    const pDraw = Math.min(1, Math.max(0, transferProgress * 2.5));
+                                    const pMove = Math.min(1, Math.max(0, (transferProgress - 0.5) * 2.5));
+
+                                    // Path mathematically bridging metal valence to non-metal shell
+                                    const pathD1 = `M 160 120 Q 200 50 240 100`;
+                                    const pathD2 = metalIs2Plus ? `M 160 140 Q 200 190 240 140` : null;
+
+                                    return (
+                                        <g>
+                                            {/* Formal Curved Arrow drawing */}
+                                            {pDraw > 0 && (
+                                                <g>
+                                                    <path d={pathD1} fill="none" stroke="var(--gold)" strokeWidth={2} strokeDasharray="200" strokeDashoffset={200 - pDraw * 200} markerEnd={pDraw > 0.9 ? "url(#curlyArrow)" : ""} />
+                                                    {metalIs2Plus && (
+                                                        <path d={pathD2} fill="none" stroke="var(--gold)" strokeWidth={2} strokeDasharray="200" strokeDashoffset={200 - pDraw * 200} markerEnd={pDraw > 0.9 ? "url(#curlyArrow)" : ""} />
+                                                    )}
+                                                </g>
+                                            )}
+
+                                            {/* Electron movement along curve */}
+                                            {pMove > 0 && (
+                                                <g>
+                                                    {/* We use parametric bezier math to keep the electron exactly on the arrow path */}
+                                                    <circle cx={160 * Math.pow(1-pMove, 2) + 2 * 200 * (1-pMove) * pMove + 240 * Math.pow(pMove, 2)} 
+                                                            cy={120 * Math.pow(1-pMove, 2) + 2 * 50 * (1-pMove) * pMove + 100 * Math.pow(pMove, 2)} 
+                                                            r={6} fill={`${mCol},1)`} />
+                                                    
+                                                    {metalIs2Plus && (
+                                                        <circle cx={160 * Math.pow(1-pMove, 2) + 2 * 200 * (1-pMove) * pMove + 240 * Math.pow(pMove, 2)} 
+                                                                cy={140 * Math.pow(1-pMove, 2) + 2 * 190 * (1-pMove) * pMove + 140 * Math.pow(pMove, 2)} 
+                                                                r={6} fill={`${mCol},1)`} />
+                                                    )}
+                                                </g>
+                                            )}
+                                        </g>
+                                    )
+                                })()}
 
                                 {/* Arrived electrons in non-metal */}
                                 {step >= 2 && (
@@ -160,6 +189,13 @@ export default function IonicBonding() {
                                 </text>
                             </g>
                         )}
+
+                        <defs>
+                            {/* Chemistry curved arrow head marker */}
+                            <marker id="curlyArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                <path d="M 0 1 L 8 5 L 0 9 z" fill="var(--gold)" />
+                            </marker>
+                        </defs>
                     </svg>
                 </div>
 

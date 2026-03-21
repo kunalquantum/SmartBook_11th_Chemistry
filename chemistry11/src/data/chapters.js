@@ -249,13 +249,7 @@ export const CHAPTERS = [
                 detail: 'Metallic character, valency, oxide character across period and group.',
                 concept: 'Metallic character decreases across a period and increases down a group. Oxide nature: metallic oxides are basic, non-metallic oxides are acidic. Across a period: Na₂O (basic) → MgO (basic) → Al₂O₃ (amphoteric) → SiO₂ → P₂O₅ → SO₃ → Cl₂O₇ (acidic). Valency varies non-uniformly across a period.',
                 formula: ['Period: metallic ↓, non-metallic ↑', 'Metal oxide + H₂O → base', 'Non-metal oxide + H₂O → acid'],
-            },
-            {
-                tag: 'inorganic', name: '3D Atomic Explorer',
-                detail: 'Interactive 3D Bohr-Rutherford models of the first 20 elements.',
-                concept: 'Visualise the exact number of protons, neutrons, and electrons for elements from Hydrogen to Calcium. Electrons are arranged in K, L, M, N shells and depth-sorted mathematically in 3D space to reveal subatomic architecture.',
-                formula: ['Nucleons = p⁺ + n⁰', 'Electrons = p⁺', 'Shell capacities: 2, 8, 8, 18'],
-            },
+            }
         ],
     },
     {
