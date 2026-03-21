@@ -257,7 +257,7 @@ export default function RadiusTrends() {
                                     width: 36, height: 36, borderRadius: 6, flexShrink: 0,
                                     background: `${col}20`, border: `1.5px solid ${col}`,
                                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: 11, fontFamily: 'var(--mono)', fontWeight: 700, color,
+                                    fontSize: 11, fontFamily: 'var(--mono)', fontWeight: 700, color: col,
                                 }}>
                                     <div style={{ fontSize: 7, color: `${col}70` }}>P{el.period}</div>
                                     {el.sym}
