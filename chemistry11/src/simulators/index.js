@@ -49,6 +49,12 @@ import Radioactivity from './ch13_nuclear/Radioactivity'
 import DecayKinetics from './ch13_nuclear/DecayKinetics'
 import NuclearReactions from './ch13_nuclear/NuclearReactions'
 import Applications from './ch13_nuclear/Applications'
+import ElectronicEffects from './ch14_organic_basics/ElectronicEffects'
+import FunctionalGroups from './ch14_organic_basics/FunctionalGroups'
+import Nomenclature from './ch14_organic_basics/Nomenclature'
+import Isomerism from './ch14_organic_basics/Isomerism'
+import ReactionMechanisms from './ch14_organic_basics/ReactionMechanisms'
+
 export const SIMULATORS = {
     ch01_t0: LawsCombination, ch01_t1: MolarMass,
     ch01_t2: MoleConcept, ch01_t3: Stoichiometry,
@@ -84,4 +90,9 @@ export const SIMULATORS = {
     ch13_t1: DecayKinetics,
     ch13_t2: NuclearReactions,
     ch13_t3: Applications,
+    ch14_t0: ElectronicEffects,
+    ch14_t1: FunctionalGroups,
+    ch14_t2: Nomenclature,
+    ch14_t3: Isomerism,
+    ch14_t4: ReactionMechanisms,
 }
