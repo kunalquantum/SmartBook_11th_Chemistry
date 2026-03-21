@@ -4,12 +4,13 @@ import { generateElectrons } from './ElectronShells'
 import { getShells } from './AtomData'
 import ChemSlider from '../ui/ChemSlider'
 
-export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, offsetY = 0, compact = false }) {
+export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, offsetY = 0, compact = false, ionCharge = 0, excitation = 0, temperature = 0 }) {
     const pCount = z;
     const nCount = Math.round(mass) - z;
+    const eCount = z - ionCharge;
     
-    // Static generation based on Z
-    const shells = useMemo(() => getShells(z), [z])
+    // Dynamic generation based on Electron Count
+    const shells = useMemo(() => getShells(eCount), [eCount])
     const nuc = useMemo(() => generateNucleus(pCount, nCount), [z, mass])
     
     // Animation Time
@@ -45,7 +46,6 @@ export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, 
                 setT(curr => curr + dt * speedRef.current)
             }
             
-            // Handle Smooth Camera Zoom Interpolation (lerping)
             const targetZoom = focusShell === 'All' ? 1 : 120 / (35 + parseInt(focusShell) * 25);
             zoomRef.current += (targetZoom - zoomRef.current) * (dt * 6);
             
@@ -55,7 +55,6 @@ export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, 
         return () => cancelAnimationFrame(frame)
     }, [focusShell])
 
-    // Pointer events for free 3D rotation
     const handlePointerDown = (e) => {
         e.target.setPointerCapture(e.pointerId);
         lastPos.current = { x: e.clientX, y: e.clientY };
@@ -66,7 +65,6 @@ export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, 
         const dx = e.clientX - lastPos.current.x;
         const dy = e.clientY - lastPos.current.y;
         lastPos.current = { x: e.clientX, y: e.clientY };
-        
         setRot(prev => ({ 
             x: Math.max(-90, Math.min(90, prev.x - dy * 0.4)), 
             y: prev.y + dx * 0.4 
@@ -77,10 +75,9 @@ export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, 
         setDragActive(false);
     };
 
-    // Current positions of electrons & structural anchors
-    const { particles: electrons, segments, labels } = generateElectrons(shells, t)
+    // pass temp & excitation to generateElectrons
+    const { particles: electrons, segments, labels } = generateElectrons(shells, t, temperature, excitation)
 
-    // 3D Projection Engine
     const project = (pt) => {
         const radY = rot.y * Math.PI / 180
         const radX = rot.x * Math.PI / 180
@@ -95,18 +92,14 @@ export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, 
         let sy = pt.y * scale;
         let sz = pt.z * scale;
         
-        // Yaw
         let x1 = sx * Math.cos(radY) + sz * Math.sin(radY)
         let z1 = -sx * Math.sin(radY) + sz * Math.cos(radY)
-        
-        // Pitch
         let y2 = sy * Math.cos(radX) - z1 * Math.sin(radX)
         let z2 = sy * Math.sin(radX) + z1 * Math.cos(radX)
         
         return { ...pt, px: 200 + x1 + offsetX, py: 150 + y2 + offsetY, pz: z2 }
     }
 
-    // Process elements for rendering
     const allProj = [
         ...(showNucleus ? nuc : []).map(project),
         ...(viewMode === 'orbital' ? electrons : []).map(project)
@@ -120,14 +113,11 @@ export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, 
 
     const projLabels = (energyLevels ? labels : []).map(l => project({...l, type: 'label'}))
     
-    // Painter's Algorithm Depth Sort
     const renderItems = [
         ...allProj.map(p => ({ ...p, mz: p.pz })),
         ...projSegments.map(s => ({ ...s, mz: (s.a.pz + s.b.pz) / 2 }))
     ].sort((a, b) => a.mz - b.mz)
 
-
-    // Style Utilities
     const btnStyle = (active) => ({
         padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, fontFamily: 'var(--mono)', cursor: 'pointer',
         background: active ? 'var(--blue)' : 'var(--bg2)',
@@ -136,9 +126,10 @@ export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, 
         transition: 'all 0.2s', whiteSpace: 'nowrap'
     });
 
+    const chargeSymbol = ionCharge === 0 ? '' : (Math.abs(ionCharge) === 1 ? (ionCharge > 0 ? '+' : '−') : `${Math.abs(ionCharge)}${ionCharge > 0 ? '+' : '−'}`);
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 0 : 16, height: compact ? '100%' : 'auto' }}>
-            {/* 3D Canvas Area */}
             <div style={{ 
                 position: 'relative', 
                 width: '100%', 
@@ -174,10 +165,10 @@ export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, 
                     {!compact && (
                         <>
                             <text x="200" y="30" textAnchor="middle" fill="#fff" style={{ fontSize: 16, fontFamily: 'var(--mono)', fontWeight: 700 }}>
-                                {name} ({symbol})
+                                {name} ({symbol}<sup>{chargeSymbol}</sup>)
                             </text>
                             <text x="200" y="50" textAnchor="middle" fill="var(--text2)" style={{ fontSize: 11, fontFamily: 'var(--mono)' }}>
-                                {pCount} Protons • {nCount} Neutrons • {pCount} Electrons
+                                {pCount} Protons • {nCount} Neutrons • {eCount} Electrons
                             </text>
                         </>
                     )}
@@ -223,10 +214,8 @@ export default function Atom3D({ z, mass, symbol, name, scale = 1, offsetX = 0, 
                 </svg>
             </div>
 
-            {/* Interactive Control Panel Below SVG */}
             {!compact && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px', background: 'var(--bg3)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                    {/* Advanced Toggle Layer */}
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                         <button onClick={() => setViewMode(v => v === 'orbital' ? 'cloud' : 'orbital')} style={btnStyle(viewMode === 'cloud')}>☁️ Cloud View</button>
                         <button onClick={() => setShowNucleus(v => !v)} style={btnStyle(showNucleus)}>🔴 Nucleus</button>

@@ -21,9 +21,9 @@ export const ATOM_DATA = [
     { z: 20, sym: 'Ca', name: 'Calcium', mass: 40, group: 2 },
 ]
 
-export const getShells = (z) => {
+export const getShells = (count) => {
     const shells = []
-    let e = z
+    let e = Math.max(0, count)
     const capacities = [2, 8, 8, 18, 18, 32]
     for(let i = 0; i < capacities.length; i++) {
         if (e <= 0) break
@@ -33,3 +33,36 @@ export const getShells = (z) => {
     }
     return shells
 }
+
+export const GEOMETRY_DATA = [
+    { 
+        name: 'Linear', 
+        domains: 2, 
+        angle: 180,
+        points: [{x: 80, y: 0, z: 0}, {x: -80, y: 0, z: 0}],
+        desc: 'Two electron domains around a central atom. e.g., BeCl₂, CO₂'
+    },
+    { 
+        name: 'Trigonal Planar', 
+        domains: 3, 
+        angle: 120,
+        points: [
+            {x: 80, y: 0, z: 0}, 
+            {x: -40, y: 69.3, z: 0}, 
+            {x: -40, y: -69.3, z: 0}
+        ],
+        desc: 'Three electron domains in one plane. e.g., BF₃, SO₃'
+    },
+    { 
+        name: 'Tetrahedral', 
+        domains: 4, 
+        angle: 109.5,
+        points: [
+            {x: 0, y: 80, z: 0}, 
+            {x: 75.4, y: -26.7, z: 0}, 
+            {x: -37.7, y: -26.7, z: 65.3}, 
+            {x: -37.7, y: -26.7, z: -65.3}
+        ],
+        desc: 'Four electron domains directed towards corners of a tetrahedron. e.g., CH₄, NH₄⁺'
+    }
+]

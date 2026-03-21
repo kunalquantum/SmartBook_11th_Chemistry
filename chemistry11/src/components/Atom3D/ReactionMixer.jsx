@@ -80,12 +80,15 @@ function calculateReaction(atomA, atomB) {
     };
 }
 
-export default function ReactionMixer({ atomA, atomB }) {
+export default function ReactionMixer({ atomA, atomB, collisionEnergy = 50 }) {
     const [phase, setPhase] = useState('idle') // idle, moving, reaction, result, inert
     const [progress, setProgress] = useState(0)
     const [reaction, setReaction] = useState(null)
     const rafRef = useRef()
     
+    // speed inversely proportional to energy (lower duration = faster)
+    const duration = 2.5 - (collisionEnergy / 100) * 2; 
+
     const isInert = atomA.group === 18 || atomB.group === 18
 
     useEffect(() => {
@@ -99,7 +102,7 @@ export default function ReactionMixer({ atomA, atomB }) {
             const start = performance.now()
             const loop = (time) => {
                 const elapsed = (time - start) / 1000
-                const p = Math.min(1, elapsed / 1.5)
+                const p = Math.min(1, elapsed / duration)
                 setProgress(p)
                 if (p < 1) {
                     rafRef.current = requestAnimationFrame(loop)
@@ -115,10 +118,10 @@ export default function ReactionMixer({ atomA, atomB }) {
         if (phase === 'reaction') {
             const timer = setTimeout(() => {
                 setPhase('result')
-            }, 2000)
+            }, 1000 + (100 - collisionEnergy) * 10) // higher energy = shorter reaction flash? No, let's keep it fixed or related
             return () => clearTimeout(timer)
         }
-    }, [phase, isInert])
+    }, [phase, isInert, duration, collisionEnergy])
 
     const startSim = () => {
         setPhase('moving')
