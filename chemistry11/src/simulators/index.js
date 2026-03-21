@@ -22,6 +22,12 @@ import OxidationReduction from './ch06_redox/OxidationReduction'
 import OxidationNumbers from './ch06_redox/OxidationNumbers'
 import RedoxBalancer from './ch06_redox/RedoxBalancer'
 import ElectrochemSeries from './ch06_redox/ElectrochemSeries'
+import PeriodicTable from './ch07_periodic/PeriodicTable'
+import RadiusTrends from './ch07_periodic/RadiusTrends'
+import IonisationEnthalpy from './ch07_periodic/IonisationEnthalpy'
+import Electronegativity from './ch07_periodic/Electronegativity'
+import ElectronGainEnthalpy from './ch07_periodic/ElectronGainEnthalpy'
+import PeriodicProperties from './ch07_periodic/PeriodicProperties'
 
 export const SIMULATORS = {
     ch01_t0: LawsCombination, ch01_t1: MolarMass,
@@ -35,8 +41,12 @@ export const SIMULATORS = {
     ch05_t0: IonicBonding, ch05_t1: LewisStructures,
     ch05_t2: VSEPRBuilder, ch05_t3: Hybridisation,
     ch05_t4: MOTheory, ch05_t5: HydrogenBonding,
-    ch06_t0: OxidationReduction,
-    ch06_t1: OxidationNumbers,
-    ch06_t2: RedoxBalancer,
-    ch06_t3: ElectrochemSeries,
+    ch06_t0: OxidationReduction, ch06_t1: OxidationNumbers,
+    ch06_t2: RedoxBalancer, ch06_t3: ElectrochemSeries,
+    ch07_t0: PeriodicTable,
+    ch07_t1: RadiusTrends,
+    ch07_t2: IonisationEnthalpy,
+    ch07_t3: Electronegativity,
+    ch07_t4: ElectronGainEnthalpy,
+    ch07_t5: PeriodicProperties,
 }
