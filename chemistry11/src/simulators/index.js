@@ -7,6 +7,11 @@ import Filtration from './ch03_techniques/Filtration'
 import Distillation from './ch03_techniques/Distillation'
 import Chromatography from './ch03_techniques/Chromatography'
 import SolventExtract from './ch03_techniques/SolventExtract'
+import AtomicModels from './ch04_atomic/AtomicModels'
+import QuantumModel from './ch04_atomic/QuantumModel'
+import QuantumNumbers from './ch04_atomic/QuantumNumbers'
+import ElectronConfig from './ch04_atomic/ElectronConfig'
+import DualNature from './ch04_atomic/DualNature'
 
 export const SIMULATORS = {
     ch01_t0: LawsCombination,
@@ -18,4 +23,9 @@ export const SIMULATORS = {
     ch03_t1: Distillation,
     ch03_t2: Chromatography,
     ch03_t3: SolventExtract,
+    ch04_t0: AtomicModels,
+    ch04_t1: QuantumModel,
+    ch04_t2: QuantumNumbers,
+    ch04_t3: ElectronConfig,
+    ch04_t4: DualNature,
 }
