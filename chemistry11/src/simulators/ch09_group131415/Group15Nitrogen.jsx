@@ -3,10 +3,6 @@ import { GROUP15 } from './helpers/groupData'
 import ChemSlider from '../../components/ui/ChemSlider'
 import ValueCard from '../../components/ui/ValueCard'
 
-const HABER_STEPS = [
-    { label: 'N₂ + 3H₂ ⇌ 2NH₃', temp: '450°C', pressure: '200 atm', catalyst: 'Fe (with K₂O, Al₂O₃ promoters)', yield: '~15% per pass', color: '#1D9E75' },
-]
-
 const OSTWALD_STEPS = [
     { n: 1, eq: '4NH₃ + 5O₂ → 4NO + 6H₂O', note: 'Catalytic oxidation — Pt/Rh gauze, 850°C', col: '#EF9F27' },
     { n: 2, eq: '2NO + O₂ → 2NO₂', note: 'Oxidation of NO by air (no catalyst needed)', col: '#D85A30' },
@@ -27,11 +23,162 @@ export default function Group15Nitrogen() {
     const [selAllot, setSelAllot] = useState(0)
     const [selEl, setSelEl] = useState('N')
 
-    // Equilibrium yield estimate for Haber process (simplified)
-    // At higher T: yield drops (exothermic), at higher P: yield rises
+    // P Allotrope Interactive State
+    const [pTemp, setPTemp] = useState(298)
+
+    // Haber Process Yield Math
+    // High pressure = high yield. High temp = low yield (but faster rate in reality).
     const yieldPct = Math.max(5, Math.min(60,
-        30 * (200 / pressure) * (400 / temp) * pressure / 200
+        30 * (200 / pressure) * (400 / temp) * (pressure / 200) * (pressure / 150)
     )).toFixed(1)
+
+    // Live Flow Reactor for Haber
+    const [particles, setParticles] = useState([])
+    const yieldRef = useRef(yieldPct)
+    yieldRef.current = yieldPct
+    const modeRef = useRef(mode)
+    modeRef.current = mode
+
+    useEffect(() => {
+        let frame
+        const loop = () => {
+            if (modeRef.current !== 'haber') {
+                frame = requestAnimationFrame(loop)
+                return
+            }
+            setParticles(pts => {
+                let next = pts.map(p => ({ ...p, y: p.y + p.vy, a: p.a + (p.va || 0) })).filter(p => p.y < 240)
+                
+                // Spawn gases at top
+                if (Math.random() > 0.8) {
+                    next.push({ id: Math.random(), type: 'N2', x: 20 + Math.random()*360, y: -10, vy: 0.8 + Math.random(), a: Math.random()*360, va: Math.random()*5 })
+                    next.push({ id: Math.random(), type: 'H2', x: 20 + Math.random()*360, y: -10, vy: 1.2 + Math.random(), a: Math.random()*360, va: Math.random()*8 })
+                    next.push({ id: Math.random(), type: 'H2', x: 20 + Math.random()*360, y: -10, vy: 1.2 + Math.random(), a: Math.random()*360, va: Math.random()*8 })
+                    next.push({ id: Math.random(), type: 'H2', x: 20 + Math.random()*360, y: -10, vy: 1.2 + Math.random(), a: Math.random()*360, va: Math.random()*8 })
+                }
+
+                // Catalyst reaction zone (y: 100 to 140)
+                next.forEach(p => {
+                    if (p.y > 100 && p.y < 130 && p.type !== 'NH3') {
+                        // The chance of conversion depends on current yield %
+                        if (Math.random() * 100 < yieldRef.current * 0.05) { 
+                            p.type = 'NH3'
+                            p.vy = 2.5 // Falls faster as heavier product
+                        }
+                    }
+                })
+                
+                return next
+            })
+            frame = requestAnimationFrame(loop)
+        }
+        frame = requestAnimationFrame(loop)
+        return () => cancelAnimationFrame(frame)
+    }, [])
+
+    const renderHaberReactor = () => (
+        <svg viewBox="0 0 400 240" style={{ marginTop: 14, overflow: 'hidden' }}>
+            <defs>
+                <pattern id="catalyst" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <circle cx="10" cy="10" r="3" fill="var(--border)" />
+                </pattern>
+            </defs>
+            
+            <rect x="0" y="100" width="400" height="40" fill="rgba(0,0,0,0.2)" stroke="var(--border)" />
+            <rect x="0" y="100" width="400" height="40" fill="url(#catalyst)" />
+            <text x="200" y="125" textAnchor="middle" fill="var(--text2)" style={{ fontSize: 12, fontFamily: 'var(--mono)', letterSpacing: 2 }}>IRON CATALYST BED</text>
+
+            <rect x="0" y="200" width="400" height="40" fill="rgba(29,158,117,0.1)" />
+            <text x="200" y="225" textAnchor="middle" fill="var(--teal)" style={{ fontSize: 12, fontFamily: 'var(--mono)', fontWeight: 700 }}>LIQUID AMMONIA (NH₃) COLLECTION</text>
+
+            {particles.map(p => (
+                <g key={p.id} transform={`translate(${p.x}, ${p.y}) rotate(${p.a})`}>
+                    {p.type === 'N2' && (
+                        <g>
+                            <circle cx="-5" cy="0" r="5" fill="#378ADD" />
+                            <circle cx="5" cy="0" r="5" fill="#378ADD" />
+                        </g>
+                    )}
+                    {p.type === 'H2' && (
+                        <g>
+                            <circle cx="-3" cy="0" r="3" fill="#aaa" />
+                            <circle cx="3" cy="0" r="3" fill="#aaa" />
+                        </g>
+                    )}
+                    {p.type === 'NH3' && (
+                        <g>
+                            <circle cx="0" cy="-4" r="5" fill="#378ADD" /> {/* N */}
+                            <circle cx="-6" cy="4" r="3" fill="#aaa" /> {/* H */}
+                            <circle cx="6" cy="4" r="3" fill="#aaa" /> {/* H */}
+                            <circle cx="0" cy="8" r="3" fill="#aaa" /> {/* H */}
+                        </g>
+                    )}
+                </g>
+            ))}
+        </svg>
+    )
+
+    const renderPhosphorusPolymerizer = () => {
+        const f = (pTemp - 298) / 275 // 0 to 1
+        return (
+            <svg viewBox="0 0 400 200" style={{ marginTop: 14 }}>
+                <text x="200" y="30" textAnchor="middle" fill="var(--coral)" style={{ fontSize: 13, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
+                    {pTemp < 573 ? 'P₄ White Phosphorus (Discrete, Strained)' : 'Pₙ Red Phosphorus (Polymeric Chain)'}
+                </text>
+                
+                {[0, 1, 2].map(i => {
+                    // Draw 3 tetrahedrons
+                    const cx = 100 + i * 100
+                    const cy = 120
+                    const p1 = { x: cx, y: cy-30 }
+                    const p2 = { x: cx-25, y: cy+15 }
+                    const p3 = { x: cx+25, y: cy+15 }
+                    const p4 = { x: cx, y: cy+5 }
+
+                    return (
+                        <g key={`p4_${i}`}>
+                            {/* Static Bonds */}
+                            <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="#EF9F27" strokeWidth="4" />
+                            <line x1={p1.x} y1={p1.y} x2={p3.x} y2={p3.y} stroke="#EF9F27" strokeWidth="4" />
+                            <line x1={p1.x} y1={p1.y} x2={p4.x} y2={p4.y} stroke="#EF9F27" strokeWidth="4" />
+                            <line x1={p2.x} y1={p2.y} x2={p4.x} y2={p4.y} stroke="#EF9F27" strokeWidth="4" />
+                            <line x1={p3.x} y1={p3.y} x2={p4.x} y2={p4.y} stroke="#EF9F27" strokeWidth="4" />
+
+                            {/* Breaking Bond (strain releases) */}
+                            <line x1={p2.x} y1={p2.y} x2={p3.x} y2={p3.y} stroke="#EF9F27" strokeWidth="4" opacity={1 - f} strokeDasharray={f > 0.5 ? "4 4" : ""} />
+
+                            {/* Forming Polymeric Bond to next unit */}
+                            {i < 2 && (
+                                <line x1={p3.x} y1={p3.y} x2={cx + 100 - 25} y2={cy + 15} stroke="#D85A30" strokeWidth="4" opacity={f} />
+                            )}
+                            {/* Ends of the chain */}
+                            {i === 0 && <line x1={p2.x} y1={p2.y} x2={p2.x - 30} y2={p2.y} stroke="#D85A30" strokeWidth="4" opacity={f} strokeDasharray="6 4" />}
+                            {i === 2 && <line x1={p3.x} y1={p3.y} x2={p3.x + 30} y2={p3.y} stroke="#D85A30" strokeWidth="4" opacity={f} strokeDasharray="6 4" />}
+
+                            {/* P Atoms */}
+                            {(() => {
+                                const c1 = f < 0.8 ? "#FAC775" : "#D85A30"
+                                const P = (x, y, r) => (
+                                    <g>
+                                        <circle cx={x} cy={y} r={r} fill={`${c1}20`} stroke={c1} strokeWidth="2" />
+                                        <text x={x} y={y+3} textAnchor="middle" fill={c1} style={{ fontSize: r*0.6, fontFamily: 'var(--mono)', fontWeight: 700 }}>P</text>
+                                    </g>
+                                )
+                                return (
+                                    <g>
+                                        {P(p1.x, p1.y, 12)}
+                                        {P(p2.x, p2.y, 12)}
+                                        {P(p3.x, p3.y, 12)}
+                                        {P(p4.x, p4.y, 14)}
+                                    </g>
+                                )
+                            })()}
+                        </g>
+                    )
+                })}
+            </svg>
+        )
+    }
 
     const pa = P_ALLOTROPES[selAllot]
     const el = GROUP15.find(e => e.sym === selEl)
@@ -72,11 +219,11 @@ export default function Group15Nitrogen() {
                         <ChemSlider label="Pressure" unit=" atm" value={pressure} min={50} max={400} step={10} onChange={setPressure} color="var(--teal)" />
                     </div>
 
-                    {/* Yield indicator */}
-                    <div style={{ padding: '16px', background: 'var(--bg3)', border: '1px solid var(--border2)', borderRadius: 10, marginBottom: 14 }}>
+                    {/* Yield indicator & Reactor */}
+                    <div style={{ padding: '16px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 14 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                             <div style={{ fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text2)' }}>
-                                Estimated NH₃ yield at {temp}°C, {pressure} atm
+                                NH₃ Yield vs T & P (Catalyst limits rate drop)
                             </div>
                             <div style={{ fontSize: 20, fontFamily: 'var(--mono)', fontWeight: 700, color: parseFloat(yieldPct) > 20 ? 'var(--teal)' : 'var(--gold)' }}>
                                 ~{yieldPct}%
@@ -90,10 +237,7 @@ export default function Group15Nitrogen() {
                                 transition: 'width 0.3s',
                             }} />
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text3)' }}>
-                            <span>↑ T → rate ↑ but yield ↓ (Le Chatelier)</span>
-                            <span>↑ P → yield ↑ (fewer moles)</span>
-                        </div>
+                        {renderHaberReactor()}
                     </div>
 
                     {/* Optimal conditions panel */}
@@ -110,10 +254,6 @@ export default function Group15Nitrogen() {
                                 <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--text3)', marginTop: 2 }}>{p.note}</div>
                             </div>
                         ))}
-                    </div>
-
-                    <div style={{ padding: '10px 14px', background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.2)', borderRadius: 8, fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text2)', lineHeight: 1.7 }}>
-                        Ammonia is the starting material for fertilisers (urea, ammonium sulphate), nitric acid, explosives, and many industrial chemicals. The Haber process feeds ~40% of the world's population.
                     </div>
                 </div>
             )}
@@ -158,20 +298,21 @@ export default function Group15Nitrogen() {
                             )}
                         </div>
                     ))}
-
-                    <div style={{ padding: '12px 16px', background: 'rgba(212,160,23,0.1)', border: '2px solid rgba(212,160,23,0.4)', borderRadius: 10, fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 700, color: 'var(--gold2)', textAlign: 'center', marginTop: 14 }}>
-                        Net: NH₃ → HNO₃  (industrial nitric acid)
-                    </div>
-
-                    <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text2)', lineHeight: 1.7 }}>
-                        HNO₃ is used in: fertiliser production (ammonium nitrate), explosives (TNT, RDX), dyes, pharmaceuticals, and rocket propellant.
-                    </div>
                 </div>
             )}
 
             {/* ── PHOSPHORUS ALLOTROPES ── */}
             {mode === 'phosphorus' && (
                 <div>
+                    <div style={{ padding: '10px 14px', background: 'rgba(216,90,48,0.08)', border: '1px solid rgba(216,90,48,0.25)', borderRadius: 8, marginBottom: 14, fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text2)', lineHeight: 1.7 }}>
+                        <strong style={{ color: 'var(--coral)' }}>White to Red Phosphorus Polymerisation:</strong> Heating fragile, highly strained P₄ molecules to 573K breaks one P-P bond per tetrahedron, instantly polymerizing them into the much more stable, less reactive Red Phosphorus chain.
+                    </div>
+
+                    <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
+                        <ChemSlider label="Heat White Phosphorus" unit="K" value={pTemp} min={298} max={573} step={5} onChange={setPTemp} color="var(--coral)" />
+                        {renderPhosphorusPolymerizer()}
+                    </div>
+
                     <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
                         {P_ALLOTROPES.map((a, i) => (
                             <button key={a.name} onClick={() => setSelAllot(i)} style={{
@@ -197,10 +338,6 @@ export default function Group15Nitrogen() {
                                 </div>
                             )}
                         </div>
-                    </div>
-
-                    <div style={{ padding: '10px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 14, fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text2)', lineHeight: 1.7 }}>
-                        {pa.desc}
                     </div>
 
                     {/* Comparison table */}
@@ -252,19 +389,6 @@ export default function Group15Nitrogen() {
                             </div>
                         )
                     })}
-
-                    {el && (
-                        <div style={{ marginTop: 14, padding: '12px 14px', background: `${el.color}12`, border: `1px solid ${el.color}30`, borderRadius: 10 }}>
-                            <div style={{ fontSize: 14, fontFamily: 'var(--mono)', fontWeight: 700, color: el.color }}>{el.name} ({el.sym})</div>
-                            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>
-                                {[['Z', el.Z], ['AR', `${el.AR} pm`], ['IE₁', `${el.IE1} kJ/mol`], ['EN', el.EN], ['MP', `${el.mp}°C`]].map(([k, v]) => (
-                                    <span key={k} style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text2)' }}>
-                                        <span style={{ color: 'var(--text3)' }}>{k}: </span><span style={{ color: el.color, fontWeight: 700 }}>{v}</span>
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 

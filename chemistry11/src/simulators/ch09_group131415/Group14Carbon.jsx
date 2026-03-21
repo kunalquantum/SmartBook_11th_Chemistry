@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { GROUP14, CARBON_ALLOTROPES } from './helpers/groupData'
+import ChemSlider from '../../components/ui/ChemSlider'
 import ValueCard from '../../components/ui/ValueCard'
 
 const SILICATES = [
@@ -40,9 +41,14 @@ export default function Group14Carbon() {
     const [mode, setMode] = useState('allotropes')
     const [selAllot, setSelAllot] = useState(0)
     const [selOxide, setSelOxide] = useState(0)
-    const [selSilicate, setSelSilicate] = useState(0)
     const [selEl, setSelEl] = useState('C')
     const [trendProp, setTrendProp] = useState('AR')
+
+    // Interactive Morph State (Graphite -> Diamond)
+    const [pressure, setPressure] = useState(1) // 1 to 100
+    
+    // Interactive Silicate Builder State
+    const [nUnits, setNUnits] = useState(1) // 1 to 4
 
     const TREND_DATA = {
         AR: { label: 'Atomic radius (pm)', vals: GROUP14.map(e => e.AR), max: 175 },
@@ -52,8 +58,136 @@ export default function Group14Carbon() {
     const td = TREND_DATA[trendProp]
     const al = CARBON_ALLOTROPES[selAllot]
     const ox = CO_CO2[selOxide]
-    const sil = SILICATES[selSilicate]
     const el = GROUP14.find(e => e.sym === selEl)
+
+    // Mathematical Morphing Function for Allotropes
+    const renderMorphingCarbon = () => {
+        const f = (pressure - 1) / 99 // 0 to 1
+        const lerp = (a, b) => a + (b - a) * f
+        const pt = (a, b) => ({ x: lerp(a.x, b.x), y: lerp(a.y, b.y) })
+
+        // 2D hex base
+        const hex = (cx, cy, rx, ry) => [
+            {x: cx, y: cy-ry}, {x: cx+rx, y: cy-ry/2}, {x: cx+rx, y: cy+ry/2},
+            {x: cx, y: cy+ry}, {x: cx-rx, y: cy+ry/2}, {x: cx-rx, y: cy-ry/2}
+        ]
+        
+        // Graphite geometry (f=0)
+        const gTop = hex(200, 70, 70, 25)
+        const gBot = hex(200, 160, 70, 25)
+        
+        // Diamond geometry (f=1)
+        // Staggered chairs
+        const dTop = gTop.map((p, i) => ({ x: p.x, y: i%2===0 ? 100 : 125 }))
+        const dBot = gBot.map((p, i) => ({ x: p.x, y: i%2===0 ? 125 : 150 }))
+
+        // Lerp
+        const atomsTop = gTop.map((g, i) => pt(g, dTop[i]))
+        const atomsBot = gBot.map((g, i) => pt(g, dBot[i]))
+        const allAtoms = [...atomsTop, ...atomsBot]
+
+        return (
+            <svg viewBox="0 0 400 240" style={{ marginTop: 14 }}>
+                {/* Pi electron clouds (Graphite only) */}
+                {f < 1 && (
+                    <g opacity={1 - Math.pow(f, 0.5)}>
+                        <ellipse cx="200" cy={lerp(70, 110)} rx="85" ry="30" fill="rgba(55,138,221,0.15)" stroke="var(--teal)" strokeWidth="1" strokeDasharray="4 4" />
+                        <ellipse cx="200" cy={lerp(160, 135)} rx="85" ry="30" fill="rgba(55,138,221,0.15)" stroke="var(--teal)" strokeWidth="1" strokeDasharray="4 4" />
+                    </g>
+                )}
+
+                {/* Vertical Sigma Bonds (Fade in as Diamond forms) */}
+                {f > 0 && atomsTop.map((t, i) => (
+                    <line key={`v${i}`} x1={t.x} y1={t.y} x2={atomsBot[i].x} y2={atomsBot[i].y} stroke="var(--border2)" strokeWidth={3} strokeLinecap="round" opacity={f} />
+                ))}
+
+                {/* In-plane covalent bonds (Always visible) */}
+                {atomsTop.map((t, i) => {
+                    const next = atomsTop[(i+1)%6]
+                    return <line key={`t${i}`} x1={t.x} y1={t.y} x2={next.x} y2={next.y} stroke="var(--border2)" strokeWidth={3} strokeLinecap="round" />
+                })}
+                {atomsBot.map((b, i) => {
+                    const next = atomsBot[(i+1)%6]
+                    return <line key={`b${i}`} x1={b.x} y1={b.y} x2={next.x} y2={next.y} stroke="var(--border2)" strokeWidth={3} strokeLinecap="round" />
+                })}
+
+                {/* Carbon Atoms */}
+                {allAtoms.map((a, i) => (
+                    <circle key={`atom${i}`} cx={a.x} cy={a.y} r={10} fill="rgba(136,135,128,0.2)" stroke="#888780" strokeWidth={2} />
+                ))}
+
+                <text x="200" y="30" textAnchor="middle" fill={f > 0.5 ? 'var(--coral)' : 'var(--teal)'} style={{ fontSize: 13, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
+                    {f === 0 ? 'Graphite (sp² + delocalised π)' : f === 1 ? 'Diamond (sp³ rigid network)' : 'Applying immense pressure... π bonds breaking'}
+                </text>
+            </svg>
+        )
+    }
+
+    // Mathematical Silicate Builder
+    const renderSilicateBuilder = () => {
+        // We draw nUnits of SiO4.
+        const units = Array.from({ length: nUnits })
+        const oxCol = '#D85A30'
+        const siCol = '#888780'
+
+        return (
+            <svg viewBox="0 0 400 240" style={{ marginTop: 14 }}>
+                {/* Bonds drawn first (behind atoms) */}
+                {units.map((_, i) => {
+                    const cx = 80 + i * 80; const cy = 120
+                    const o1 = { x: cx - 40, y: cy + 30 }
+                    const o2 = { x: cx + 40, y: cy + 30 }
+                    const o3 = { x: cx, y: cy - 35 }
+                    const o4 = { x: cx, y: cy + 10 }
+                    return (
+                        <g key={`bonds${i}`}>
+                            <line x1={cx} y1={cy} x2={o1.x} y2={o1.y} stroke="var(--border2)" opacity="0.6" strokeWidth={3} />
+                            <line x1={cx} y1={cy} x2={o2.x} y2={o2.y} stroke="var(--border2)" opacity="0.6" strokeWidth={3} />
+                            <line x1={cx} y1={cy} x2={o3.x} y2={o3.y} stroke="var(--border2)" opacity="0.6" strokeWidth={3} />
+                            <line x1={cx} y1={cy} x2={o4.x} y2={o4.y} stroke="var(--border2)" opacity="0.6" strokeWidth={3} />
+                        </g>
+                    )
+                })}
+                
+                {/* O atoms */}
+                {units.map((_, i) => {
+                    const cx = 80 + i * 80; const cy = 120
+                    const Ox = (x,y,r) => (
+                        <g>
+                            <circle cx={x} cy={y} r={r} fill={`${oxCol}20`} stroke={oxCol} strokeWidth={1.5} />
+                            <text x={x} y={y+3} textAnchor="middle" fill={oxCol} style={{ fontSize: r*0.7, fontFamily: 'var(--mono)', fontWeight:700 }}>O</text>
+                        </g>
+                    )
+                    return (
+                        <g key={`oxy${i}`}>
+                            {i === 0 && Ox(cx-40, cy+30, 12)}
+                            {Ox(cx, cy-35, 12)}
+                            {Ox(cx+40, cy+30, 12)}
+                            {Ox(cx, cy+10, 14)}
+                        </g>
+                    )
+                })}
+
+                {/* Si atoms (in center of tetrahedron) */}
+                {units.map((_, i) => {
+                    const cx = 80 + i * 80; const cy = 120
+                    return (
+                        <g key={`si${i}`}>
+                            <circle cx={cx} cy={cy} r={10} fill={`${siCol}30`} stroke={siCol} strokeWidth={2} />
+                            <text x={cx} y={cy+3} textAnchor="middle" fill={siCol} style={{ fontSize: 9, fontFamily: 'var(--mono)', fontWeight:700 }}>Si</text>
+                        </g>
+                    )
+                })}
+
+                <text x="200" y="30" textAnchor="middle" fill={'var(--purple)'} style={{ fontSize: 13, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
+                    {nUnits === 1 ? 'Orthosilicate (SiO₄⁴⁻)' : nUnits === 2 ? 'Pyrosilicate (Si₂O₇⁶⁻)' : `Chain Silicate Segment (${nUnits} units)`}
+                </text>
+                <text x="200" y="48" textAnchor="middle" fill={'var(--text3)'} style={{ fontSize: 10, fontFamily: 'var(--mono)' }}>
+                    Corner sharing of Oxygen atoms forms polymeric structures
+                </text>
+            </svg>
+        )
+    }
 
     return (
         <div>
@@ -73,6 +207,15 @@ export default function Group14Carbon() {
             {/* ── ALLOTROPES ── */}
             {mode === 'allotropes' && (
                 <div>
+                    <div style={{ padding: '10px 14px', background: 'rgba(239,159,39,0.08)', border: '1px solid rgba(239,159,39,0.25)', borderRadius: 8, marginBottom: 14, fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text2)', lineHeight: 1.7 }}>
+                        <strong style={{ color: 'var(--gold)' }}>High Pressure Synthesis:</strong> Graphite is the most thermodynamically stable form at SATP. However, applying immense constant pressure (~100,000 atm) at high temperature forces the sheets together, converting it to Diamond.
+                    </div>
+
+                    <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
+                        <ChemSlider label="Apply Pressure (x10³ atm)" unit="k atm" value={pressure} min={1} max={100} step={1} onChange={setPressure} color="var(--gold)" />
+                        {renderMorphingCarbon()}
+                    </div>
+
                     <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
                         {CARBON_ALLOTROPES.map((a, i) => (
                             <button key={a.name} onClick={() => setSelAllot(i)} style={{
@@ -102,17 +245,6 @@ export default function Group14Carbon() {
                                 <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--text3)', marginBottom: 3 }}>{p.label}</div>
                                 <div style={{ fontSize: 12, fontFamily: 'var(--mono)', color: p.col, lineHeight: 1.5 }}>{p.val}</div>
                             </div>
-                        ))}
-                    </div>
-
-                    {/* Comparison table */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
-                        {['Hardness', 'Conductivity'].map(prop => (
-                            CARBON_ALLOTROPES.map((a, i) => (
-                                <div key={`${prop}${i}`} style={{ display: prop === 'Hardness' && i === 0 ? 'block' : prop === 'Hardness' ? 'block' : i === 0 ? 'block' : 'block' }}>
-                                    {/* handled below */}
-                                </div>
-                            ))
                         ))}
                     </div>
                 </div>
@@ -154,55 +286,34 @@ export default function Group14Carbon() {
                 </div>
             )}
 
-            {/* ── SILICATES ── */}
+            {/* ── SILICATES BUILDER ── */}
             {mode === 'silicates' && (
                 <div>
                     <div style={{ padding: '10px 14px', background: 'rgba(127,119,221,0.08)', border: '1px solid rgba(127,119,221,0.25)', borderRadius: 8, marginBottom: 14, fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text2)', lineHeight: 1.7 }}>
-                        <strong style={{ color: 'var(--purple)' }}>Silicates</strong> are built from SiO₄⁴⁻ tetrahedra sharing O corners. The degree of sharing determines the structure — from isolated units to 3D frameworks.
+                        <strong style={{ color: 'var(--purple)' }}>Interactive Silicate Builder:</strong> Silicates are built from SiO₄⁴⁻ tetrahedra sharing O corners. The degree of sharing determines the mineral structure. Click "Polymerize" to build a chain!
                     </div>
 
-                    {/* Silicate selector */}
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-                        {SILICATES.map((s, i) => (
-                            <button key={s.name} onClick={() => setSelSilicate(i)} style={{
-                                padding: '4px 10px', borderRadius: 20, fontSize: 10,
-                                fontFamily: 'var(--mono)', cursor: 'pointer',
-                                background: selSilicate === i ? s.color : 'var(--bg3)',
-                                color: selSilicate === i ? '#000' : 'var(--text2)',
-                                border: `1px solid ${selSilicate === i ? s.color : 'var(--border)'}`,
-                            }}>{s.name}</button>
-                        ))}
-                    </div>
-
-                    <div style={{ padding: '14px 16px', background: `${sil.color}12`, border: `1px solid ${sil.color}35`, borderRadius: 10, marginBottom: 14 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                            <div>
-                                <div style={{ fontSize: 15, fontFamily: 'var(--mono)', fontWeight: 700, color: sil.color }}>{sil.name}</div>
-                                <div style={{ fontSize: 13, fontFamily: 'var(--mono)', color: 'var(--text2)', marginTop: 2 }}>{sil.formula}</div>
-                            </div>
-                            <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text3)', textAlign: 'right' }}>
-                                Si atoms: {sil.nSi}<br />O shared per Si: {typeof sil.nSi === 'number' ? (sil.nSi === 1 ? 0 : sil.nSi === 2 ? 1 : 2) : '2-4'}
-                            </div>
+                    <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+                            <button onClick={() => setNUnits(Math.max(1, nUnits - 1))} style={{ padding: '8px 16px', borderRadius: 8, background: 'var(--bg3)', color: 'var(--coral)', border: '1px solid var(--coral)', fontFamily: 'var(--mono)', fontWeight: 700, cursor: 'pointer' }}>
+                                − Remove Unit
+                            </button>
+                            <button onClick={() => setNUnits(Math.min(4, nUnits + 1))} style={{ padding: '8px 16px', borderRadius: 8, background: 'var(--teal)', color: '#fff', border: '1px solid var(--teal)', fontFamily: 'var(--mono)', fontWeight: 700, cursor: 'pointer' }}>
+                                + Polymerize (Add SiO₄)
+                            </button>
                         </div>
-                        <div style={{ fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text2)', marginBottom: 6 }}>{sil.unit}</div>
-                        <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: sil.color }}>Examples: {sil.example}</div>
+                        {renderSilicateBuilder()}
                     </div>
 
-                    {/* Degree of polymerisation visual */}
-                    <div style={{ marginBottom: 14 }}>
-                        <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--text3)', marginBottom: 8, letterSpacing: 1 }}>
-                            DEGREE OF O-CORNER SHARING
-                        </div>
-                        {SILICATES.map((s, i) => (
-                            <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, cursor: 'pointer' }}
-                                onClick={() => setSelSilicate(i)}>
-                                <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: s.color, minWidth: 80 }}>{s.name}</span>
-                                <div style={{ flex: 1, height: 12, background: 'var(--bg3)', borderRadius: 6, overflow: 'hidden' }}>
-                                    <div style={{ height: '100%', width: `${(i + 1) / 6 * 100}%`, background: s.color, borderRadius: 6, transition: 'width 0.3s' }} />
-                                </div>
-                                <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--text3)', minWidth: 60 }}>{s.formula}</span>
-                            </div>
-                        ))}
+                    <div style={{ padding: '12px 16px', background: `rgba(216,90,48,0.1)`, border: `1px solid rgba(216,90,48,0.3)`, borderRadius: 10 }}>
+                        <div style={{ fontSize: 14, fontFamily: 'var(--mono)', fontWeight: 700, color: 'var(--coral)', marginBottom: 8 }}>Common Structures:</div>
+                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text2)', lineHeight: 1.6 }}>
+                            <li><strong style={{color:'#EF9F27'}}>1 unit:</strong> Orthosilicate (Zircon) - 0 corners shared</li>
+                            <li><strong style={{color:'#1D9E75'}}>2 units:</strong> Pyrosilicate (Thortveitite) - 1 corner shared</li>
+                            <li><strong style={{color:'#D85A30'}}>Chain:</strong> Pyroxenes - 2 corners shared per internal unit</li>
+                            <li><strong style={{color:'#378ADD'}}>Sheet:</strong> Micas / Clay - 3 corners shared (forms 2D plane)</li>
+                            <li><strong style={{color:'#888780'}}>3D Network:</strong> Quartz - All 4 corners shared (SiO₂)</li>
+                        </ul>
                     </div>
                 </div>
             )}
@@ -239,19 +350,6 @@ export default function Group14Carbon() {
                             </div>
                         )
                     })}
-
-                    {el && (
-                        <div style={{ marginTop: 14, padding: '12px 14px', background: `${el.color}12`, border: `1px solid ${el.color}30`, borderRadius: 10 }}>
-                            <div style={{ fontSize: 14, fontFamily: 'var(--mono)', fontWeight: 700, color: el.color }}>{el.name} ({el.sym})</div>
-                            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>
-                                {[['Z', el.Z], ['AR', `${el.AR} pm`], ['IE₁', `${el.IE1} kJ/mol`], ['EN', el.EN], ['MP', `${el.mp}°C`]].map(([k, v]) => (
-                                    <span key={k} style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text2)' }}>
-                                        <span style={{ color: 'var(--text3)' }}>{k}: </span><span style={{ color: el.color, fontWeight: 700 }}>{v}</span>
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 

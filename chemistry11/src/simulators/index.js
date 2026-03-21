@@ -28,6 +28,7 @@ import IonisationEnthalpy from './ch07_periodic/IonisationEnthalpy'
 import Electronegativity from './ch07_periodic/Electronegativity'
 import ElectronGainEnthalpy from './ch07_periodic/ElectronGainEnthalpy'
 import PeriodicProperties from './ch07_periodic/PeriodicProperties'
+import AtomicStructure3D from './ch07_periodic/AtomicStructure3D'
 import AlkaliMetals from './ch08_group12/AlkaliMetals'
 import LiAnomaly from './ch08_group12/LiAnomaly'
 import AlkalineEarth from './ch08_group12/AlkalineEarth'
@@ -60,6 +61,7 @@ export const SIMULATORS = {
     ch07_t0: PeriodicTable, ch07_t1: RadiusTrends,
     ch07_t2: IonisationEnthalpy, ch07_t3: Electronegativity,
     ch07_t4: ElectronGainEnthalpy, ch07_t5: PeriodicProperties,
+    ch07_t6: AtomicStructure3D,
     ch08_t0: AlkaliMetals, ch08_t1: LiAnomaly,
     ch08_t2: AlkalineEarth, ch08_t3: BeAnomaly,
     ch08_t4: Compounds,
