@@ -22,12 +22,6 @@ import OxidationReduction from './ch06_redox/OxidationReduction'
 import OxidationNumbers from './ch06_redox/OxidationNumbers'
 import RedoxBalancer from './ch06_redox/RedoxBalancer'
 import ElectrochemSeries from './ch06_redox/ElectrochemSeries'
-import PeriodicTable from './ch07_periodic/PeriodicTable'
-import RadiusTrends from './ch07_periodic/RadiusTrends'
-import IonisationEnthalpy from './ch07_periodic/IonisationEnthalpy'
-import Electronegativity from './ch07_periodic/Electronegativity'
-import ElectronGainEnthalpy from './ch07_periodic/ElectronGainEnthalpy'
-import PeriodicProperties from './ch07_periodic/PeriodicProperties'
 import AlkaliMetals from './ch08_group12/AlkaliMetals'
 import LiAnomaly from './ch08_group12/LiAnomaly'
 import AlkalineEarth from './ch08_group12/AlkalineEarth'
@@ -42,6 +36,10 @@ import KineticTheory from './ch10_states/KineticTheory'
 import RealGases from './ch10_states/RealGases'
 import Liquids from './ch10_states/Liquids'
 import Solids from './ch10_states/Solids'
+import Adsorption from './ch11_colloids/Adsorption'
+import Catalysis from './ch11_colloids/Catalysis'
+import Colloids from './ch11_colloids/Colloids'
+import Coagulation from './ch11_colloids/Coagulation'
 
 export const SIMULATORS = {
     ch01_t0: LawsCombination, ch01_t1: MolarMass,
@@ -57,17 +55,16 @@ export const SIMULATORS = {
     ch05_t4: MOTheory, ch05_t5: HydrogenBonding,
     ch06_t0: OxidationReduction, ch06_t1: OxidationNumbers,
     ch06_t2: RedoxBalancer, ch06_t3: ElectrochemSeries,
-    ch07_t0: PeriodicTable, ch07_t1: RadiusTrends,
-    ch07_t2: IonisationEnthalpy, ch07_t3: Electronegativity,
-    ch07_t4: ElectronGainEnthalpy, ch07_t5: PeriodicProperties,
     ch08_t0: AlkaliMetals, ch08_t1: LiAnomaly,
     ch08_t2: AlkalineEarth, ch08_t3: BeAnomaly,
     ch08_t4: Compounds,
     ch09_t0: Group13Boron, ch09_t1: Group14Carbon,
     ch09_t2: Group15Nitrogen, ch09_t3: OxidesOxoacids,
-    ch10_t0: GasLaws,
-    ch10_t1: KineticTheory,
-    ch10_t2: RealGases,
-    ch10_t3: Liquids,
+    ch10_t0: GasLaws, ch10_t1: KineticTheory,
+    ch10_t2: RealGases, ch10_t3: Liquids,
     ch10_t4: Solids,
+    ch11_t0: Adsorption,
+    ch11_t1: Catalysis,
+    ch11_t2: Colloids,
+    ch11_t3: Coagulation,
 }
