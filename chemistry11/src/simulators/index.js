@@ -12,20 +12,26 @@ import QuantumModel from './ch04_atomic/QuantumModel'
 import QuantumNumbers from './ch04_atomic/QuantumNumbers'
 import ElectronConfig from './ch04_atomic/ElectronConfig'
 import DualNature from './ch04_atomic/DualNature'
+import IonicBonding from './ch05_bonding/IonicBonding'
+import LewisStructures from './ch05_bonding/LewisStructures'
+import VSEPRBuilder from './ch05_bonding/VSEPRBuilder'
+import Hybridisation from './ch05_bonding/Hybridisation'
+import MOTheory from './ch05_bonding/MOTheory'
+import HydrogenBonding from './ch05_bonding/HydrogenBonding'
 
 export const SIMULATORS = {
-    ch01_t0: LawsCombination,
-    ch01_t1: MolarMass,
-    ch01_t2: MoleConcept,
-    ch01_t3: Stoichiometry,
+    ch01_t0: LawsCombination, ch01_t1: MolarMass,
+    ch01_t2: MoleConcept, ch01_t3: Stoichiometry,
     ch01_t4: EmpiricalFormula,
-    ch03_t0: Filtration,
-    ch03_t1: Distillation,
-    ch03_t2: Chromatography,
-    ch03_t3: SolventExtract,
-    ch04_t0: AtomicModels,
-    ch04_t1: QuantumModel,
-    ch04_t2: QuantumNumbers,
-    ch04_t3: ElectronConfig,
+    ch03_t0: Filtration, ch03_t1: Distillation,
+    ch03_t2: Chromatography, ch03_t3: SolventExtract,
+    ch04_t0: AtomicModels, ch04_t1: QuantumModel,
+    ch04_t2: QuantumNumbers, ch04_t3: ElectronConfig,
     ch04_t4: DualNature,
+    ch05_t0: IonicBonding,
+    ch05_t1: LewisStructures,
+    ch05_t2: VSEPRBuilder,
+    ch05_t3: Hybridisation,
+    ch05_t4: MOTheory,
+    ch05_t5: HydrogenBonding,
 }
