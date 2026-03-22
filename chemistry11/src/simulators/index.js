@@ -59,6 +59,10 @@ import Alkenes from './ch15_hydrocarbons/Alkenes'
 import Alkynes from './ch15_hydrocarbons/Alkynes'
 import AromaticHydrocarbons from './ch15_hydrocarbons/AromaticHydrocarbons'
 import Reactions from './ch15_hydrocarbons/Reactions'
+import Drugs from './ch16_everyday/Drugs'
+import Polymers from './ch16_everyday/Polymers'
+import FoodChemistry from './ch16_everyday/FoodChemistry'
+import CleaningAgents from './ch16_everyday/CleaningAgents'
 export const SIMULATORS = {
     ch01_t0: LawsCombination, ch01_t1: MolarMass,
     ch01_t2: MoleConcept, ch01_t3: Stoichiometry,
@@ -104,4 +108,8 @@ export const SIMULATORS = {
     ch15_t2: Alkynes,
     ch15_t3: AromaticHydrocarbons,
     ch15_t4: Reactions,
+    ch16_t0: Drugs,
+    ch16_t1: Polymers,
+    ch16_t2: FoodChemistry,
+    ch16_t3: CleaningAgents,
 }
