@@ -54,7 +54,11 @@ import FunctionalGroups from './ch14_organic_basics/FunctionalGroups'
 import Nomenclature from './ch14_organic_basics/Nomenclature'
 import Isomerism from './ch14_organic_basics/Isomerism'
 import ReactionMechanisms from './ch14_organic_basics/ReactionMechanisms'
-
+import Alkanes from './ch15_hydrocarbons/Alkanes'
+import Alkenes from './ch15_hydrocarbons/Alkenes'
+import Alkynes from './ch15_hydrocarbons/Alkynes'
+import AromaticHydrocarbons from './ch15_hydrocarbons/AromaticHydrocarbons'
+import Reactions from './ch15_hydrocarbons/Reactions'
 export const SIMULATORS = {
     ch01_t0: LawsCombination, ch01_t1: MolarMass,
     ch01_t2: MoleConcept, ch01_t3: Stoichiometry,
@@ -95,4 +99,9 @@ export const SIMULATORS = {
     ch14_t2: Nomenclature,
     ch14_t3: Isomerism,
     ch14_t4: ReactionMechanisms,
+    ch15_t0: Alkanes,
+    ch15_t1: Alkenes,
+    ch15_t2: Alkynes,
+    ch15_t3: AromaticHydrocarbons,
+    ch15_t4: Reactions,
 }
